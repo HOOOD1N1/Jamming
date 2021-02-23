@@ -2,6 +2,32 @@ const clientId = '';
 const redirectURI = 'http://localhost:3000/';
 let accessToken;
 const Spotify = {
+    search(term) {
+        const accessToken = Spotify.getAccesToken();
+        return fetch(`https://api.spotify.com/v1/search?type=track&q=${term}`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        }).then(response => {
+            return response.json();
+        }).then(jsonResponse => {
+            if (!jsonResponse.tracks) {
+                return [];
+            } else {
+                return jsonResponse.tracks.items.map(track => {
+
+                    return {
+                        id: track.id,
+                        name: track.name,
+                        artists: track.artist[0].name,
+                        album: track.album.name,
+                        uri: track.uri
+                    }
+
+                });
+            }
+        });
+    },
 
     getAccesToken() {
         if (accessToken) {
