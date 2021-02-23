@@ -1,5 +1,5 @@
 const clientId = '';
-const redirectURI = 'http://localhost:3000/';
+const redirectURI = 'http://localhost:3000/callback/';
 let accessToken;
 const Spotify = {
     search(term) {
@@ -14,17 +14,13 @@ const Spotify = {
             if (!jsonResponse.tracks) {
                 return [];
             } else {
-                return jsonResponse.tracks.items.map(track => {
-
-                    return {
-                        id: track.id,
-                        name: track.name,
-                        artists: track.artist[0].name,
-                        album: track.album.name,
-                        uri: track.uri
-                    }
-
-                });
+                return jsonResponse.tracks.items.map(track => ({
+                    id: track.id,
+                    name: track.name,
+                    artists: track.artists[0].name,
+                    album: track.album.name,
+                    uri: track.uri
+                }));
             }
         });
     },
@@ -52,6 +48,37 @@ const Spotify = {
         }
 
 
+    },
+    savePlaylist(playlistName, trackUris) {
+        let accessToken = Spotify.getAccesToken();
+        const headers = {
+            Authorization: `Bearer ${accessToken}`
+        };
+        let userId;
+
+        if (!playlistName && !trackUris.length) {
+            return;
+        }
+
+        return fetch(`https://api.spotify.com/v1/me`, { headers: headers })
+            .then(response => response.json())
+            .then(responseJson => {
+                userId = responseJson.id;
+                return fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
+                        headers: headers,
+                        method: 'POST',
+                        body: JSON.stringify({ name: playlistName })
+                    }).then(response => response.json())
+                    .then(responseJson => {
+                        const playlistId = responseJson.id;
+                        return fetch(`https://api.spotify.com/v1/users/${userId}/playlists/${playlistId}/tracks`, {
+                            headers: headers,
+                            method: 'POST',
+                            body: JSON.stringify({ uris: trackUris })
+                        })
+                    });
+
+            })
     }
 };
 export default Spotify;
